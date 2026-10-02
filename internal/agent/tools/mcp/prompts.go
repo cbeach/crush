@@ -80,6 +80,12 @@ func getPrompts(ctx context.Context, c *ClientSession) ([]*Prompt, error) {
 	}
 	result, err := c.ListPrompts(ctx, &mcp.ListPromptsParams{})
 	if err != nil {
+		// Handle "Method not found" errors from MCP servers that advertise
+		// the prompts capability but don't actually support prompts/list.
+		if isMethodNotFoundError(err) {
+			slog.Warn("MCP server does not support prompts/list", "error", err)
+			return nil, nil
+		}
 		return nil, err
 	}
 	return result.Prompts, nil
